@@ -155,10 +155,25 @@ short execute_commands(char* line)
 	printf("count: %d\n", count);
 	printf("%s\n", copyOfLine);
 
-	//create array of pointers, same size as the number of pipes
-	char **arrayOfPointers = calloc(count, sizeof(void*)); //create array of pointers containing
-	//count indicies
-	
+	//multi process
+	pid_t pid; //keep track of process id of forks
+	int fd[2]; //hold fds of both ends of the pipe
+
+	//create pipe
+	if (pipe(fd) < 0)
+		perror("pipe error");
+
+	for (i = 0; i < count; i ++){
+		pid = fork();
+		if (pid < 0){
+			perror("Problem forking");
+			exit(1);
+		}
+		else if (pid == 0){
+			//child process
+			
+		}
+	}
 
 	return status;
 }
