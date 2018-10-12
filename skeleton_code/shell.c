@@ -133,7 +133,10 @@ short execute_commands(char* line)
 {
 	short status;
 	//enter your code here
-
+//create array of pointers, each pointer points to a subarray of the parsed array
+//each subarray will contain one commands
+//dynamically create array of pointers and fork as many processes as there are indexes
+//iterate and read from pipe, perform function, output to pipe
 
 	int i = 0;
 	while (line[i])
@@ -146,14 +149,16 @@ short execute_commands(char* line)
 
 	copyArray(line, copyOfLine);
 	i=0;
-	// printf("%s\n", &copyOfLine[1]);
-	// while (copyOfLine[i]){
-	// 	printf("hello %s\n", &copyOfLine[i]);
-	// 	i++;
-	// }
 
-	parsePipeFilter(copyOfLine);
+	int count = 0; //keep track of how many pipes or redirections there are
+	parsePipeFilter(copyOfLine, &count);
+	printf("count: %d\n", count);
 	printf("%s\n", copyOfLine);
+
+	//create array of pointers, same size as the number of pipes
+	char **arrayOfPointers = calloc(count, sizeof(void*)); //create array of pointers containing
+	//count indicies
+	
 
 	return status;
 }

@@ -13,9 +13,7 @@ commandParser.h contains all the methods for parsing the user input
 #include <string.h>
 #include <stdbool.h>
 
-void parseSpaces(char *line, char **resultArr, int *i);
-void parsePipeFilter(char *arr);
-void parseIORedirection(char *line);
+void parsePipeFilter(char *arr, int *count);
 void copyArray(char *arr1, char *arr2);
 
 #endif
