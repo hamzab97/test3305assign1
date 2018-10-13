@@ -12,7 +12,7 @@
 #include "shell.h"
 #include "commandParser.h"
 #include <unistd.h>
-#include "array(1).h"
+#include "array.h"
 /******************************************************************************
 * Processes the input and determine whether it is a user interface operation
 * or a set of commands that will need to be executed.
@@ -148,15 +148,27 @@ short execute_commands(char* line)
 	// printf("%d\n", size);
 
 	char *copyOfLine = calloc(size, sizeof(char));
-	char *commands = calloc(size, sizeof(char));
 
 	copyArray(line, copyOfLine);
 	i=0;
 
 	int count = 0; //keep track of how many pipes or redirections there are
-	parsePipeFilter(copyOfLine, &count, &commands);
+	int input = 0; //boolean variable to check whether there is input redirections
+	int output = 0; //bool var to check if there is output redirection
+	parsePipeFilter(copyOfLine, &count, &input, &output); //get count of how mabny pipes there are
 	// printf("count: %d\n", count);
 
+	Array array; //create new object array
+	create_new_array(&array); //constructor to create and initialize array
+
+	//initialize indicies
+  char * pnch =  strtok(line, " ");
+
+  while(pnch){ //separate everything by spaces
+		//each index in array contains tokens separated bvy spaces
+      append(&array, pnch);
+      pnch = strtok(NULL, " ");
+  }
 
 	//multi process
 	pid_t pid; //keep track of process id of forks
@@ -166,39 +178,37 @@ short execute_commands(char* line)
 	if (pipe(fd) < 0)
 		perror("pipe error");
 
-	printf("coutn: %d\n", count);
-	printf("%s\n", commands);
-	(*commands)++;
-	printf("%s\n", commands);
-	// for (i = 0; i <= count; i ++){
-	// 	pid = fork();
-	// 	if (pid < 0){
-	// 		perror("Problem forking");
-	// 		exit(1);
-	// 	}
-	// 	else if (pid == 0){
-	// 		//child process
-	// 		printf("\n" );
-	// 		printf("i am child process\n");
-	// 		close(fd[0]); //close pipes
-	// 		if (dup2(fd[1], STDOUT_FILENO)<0){
-	// 			perror("cant dupe");
-	// 			exit(1);
-	// 		}
-	// 		execlp(commands, commands, NULL);
-	// 	}
-	// 	else{
-	// 		printf("\n" );
-	// 		printf("i am parent process\n");
-	//
-	// 		close(fd[1]);
-	// 		if (dup2(fd[0], STDIN_FILENO) < 0){
-	// 			perror("cant dupe");
-	// 			exit(1);
-	// 		}
-	// 		execlp("sort", "sort", NULL);
-	// 	}
-	// }
+	// printf("coutn: %d\n", count);
+	int j = 0; //counter to keep track of indices in array
+	for (i = 0; i <= count; i ++){
+		pid = fork();
+		if (pid < 0){
+			perror("Problem forking");
+			exit(1);
+		}
+		else if (pid == 0){
+			//child process
+			printf("\n" );
+			printf("i am child process\n");
+			close(fd[0]); //close pipes
+			if (dup2(fd[1], STDOUT_FILENO)<0){
+				perror("cant dupe");
+				exit(1);
+			}
+			execlp(array[j], array[j], NULL);
+		}
+		else{
+			printf("\n" );
+			printf("i am parent process\n");
+
+			close(fd[1]);
+			if (dup2(fd[0], STDIN_FILENO) < 0){
+				perror("cant dupe");
+				exit(1);
+			}
+			execlp("sort", "sort", NULL);
+		}
+	}
 
 	return status;
 }

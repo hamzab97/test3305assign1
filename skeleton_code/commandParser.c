@@ -7,36 +7,23 @@ commandParser.c contains all the methods for parsing the user input
 
 #include "commandParser.h"
 
-void parsePipeFilter(char *arr, int *count, char **commands){
+void parsePipeFilter(char *arr, int *count, int *input, int *output){
   //iterate through array,
   //every time there is, pipe filter, replace it with '\0'
   int i = 0;
   while (arr[i]){
-    if (arr[i] == '|' || arr[i] == '>'  || arr[i] == '<' ){
+    if (arr[i] == '|'){
       (*count) ++;
+    }
+    else if (arr[i] == '<'){ //check if input redirection exists
+      (*input) = 1;
+    }
+    else if (arr[i] == '>'){ //check if output redirection exists
+      (*output) = 1;
     }
     // printf("hello: %c\n", arr[i]);
     i++;
   }
-    //each index of arr will have 1 command
-  i = 0;
-  char *token;
-  while ((token = strtok_r(arr, "|<> ", &arr))){
-    // printf("token: %s\n", token);
-    commands[i] = token; //assign entire command to one index of arr
-    // printf("commands at %d is %s\n", i, commands[i]);
-    i++;
-  }
-
-  // free(arr);
-  // arr [(*count)+1];//allocate spacce to hold the command words for each argument
-  // while ((token = strtok_r(&commands, " ", commands))){
-  //   printf("token: %s\n", token);
-  //   arr[i] = token; //assign entire command to one index of arr
-  //   // printf("commands at %d is %s\n", i, commands[i]);
-  //   i++;
-  // }
-  // // printf("command 1 is %s\n", commands[1]);
 }
 
 void copyArray(char *arr1, char *arr2){

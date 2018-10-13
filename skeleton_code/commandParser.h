@@ -13,7 +13,7 @@ commandParser.h contains all the methods for parsing the user input
 #include <string.h>
 #include <stdbool.h>
 
-void parsePipeFilter(char *arr, int *count, char **commands);
+void parsePipeFilter(char *arr, int *count, int *input, int *output);
 void copyArray(char *arr1, char *arr2);
 // void current(char* commands,int *i, char* word);
 
