@@ -12,6 +12,7 @@
 #include "shell.h"
 #include "commandParser.h"
 #include <unistd.h>
+#include "array(1).h"
 /******************************************************************************
 * Processes the input and determine whether it is a user interface operation
 * or a set of commands that will need to be executed.
@@ -166,36 +167,38 @@ short execute_commands(char* line)
 		perror("pipe error");
 
 	printf("coutn: %d\n", count);
-	printf("%s\n", commands[0]);
-	for (i = 0; i <= count; i ++){
-		pid = fork();
-		if (pid < 0){
-			perror("Problem forking");
-			exit(1);
-		}
-		else if (pid == 0){
-			//child process
-			printf("\n" );
-			printf("i am child process\n");
-			close(fd[0]); //close pipes
-			if (dup2(fd[1], STDOUT_FILENO)<0){
-				perror("cant dupe");
-				exit(1);
-			}
-			execlp(commands, commands, NULL);
-		}
-		else{
-			printf("\n" );
-			printf("i am parent process\n");
-
-			close(fd[1]);
-			if (dup2(fd[0], STDIN_FILENO) < 0){
-				perror("cant dupe");
-				exit(1);
-			}
-			execlp("sort", "sort", NULL);
-		}
-	}
+	printf("%s\n", commands);
+	(*commands)++;
+	printf("%s\n", commands);
+	// for (i = 0; i <= count; i ++){
+	// 	pid = fork();
+	// 	if (pid < 0){
+	// 		perror("Problem forking");
+	// 		exit(1);
+	// 	}
+	// 	else if (pid == 0){
+	// 		//child process
+	// 		printf("\n" );
+	// 		printf("i am child process\n");
+	// 		close(fd[0]); //close pipes
+	// 		if (dup2(fd[1], STDOUT_FILENO)<0){
+	// 			perror("cant dupe");
+	// 			exit(1);
+	// 		}
+	// 		execlp(commands, commands, NULL);
+	// 	}
+	// 	else{
+	// 		printf("\n" );
+	// 		printf("i am parent process\n");
+	//
+	// 		close(fd[1]);
+	// 		if (dup2(fd[0], STDIN_FILENO) < 0){
+	// 			perror("cant dupe");
+	// 			exit(1);
+	// 		}
+	// 		execlp("sort", "sort", NULL);
+	// 	}
+	// }
 
 	return status;
 }
