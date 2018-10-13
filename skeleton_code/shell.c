@@ -13,6 +13,7 @@
 #include "commandParser.h"
 #include <unistd.h>
 #include "array.h"
+#include <signal.h>
 /******************************************************************************
 * Processes the input and determine whether it is a user interface operation
 * or a set of commands that will need to be executed.
@@ -133,82 +134,86 @@ void shell(char* filename)
 ******************************************************************************/
 short execute_commands(char* line)
 {
-	short status;
-	//enter your code here
-//create array of pointers, each pointer points to a subarray of the parsed array
-//each subarray will contain one commands
-//dynamically create array of pointers and fork as many processes as there are indexes
-//iterate and read from pipe, perform function, output to pipe
+	signal(SIGINT, handle_SIGINT); //start signal to watch for control + c entered by user
+	while(1){ //keep loop running
 
-	int i = 0;
-	while (line[i])
-		i++;
+		short status;
+		//enter your code here
+	//create array of pointers, each pointer points to a subarray of the parsed array
+	//each subarray will contain one commands
+	//dynamically create array of pointers and fork as many processes as there are indexes
+	//iterate and read from pipe, perform function, output to pipe
 
-	int size = i;
-	// printf("%d\n", size);
+		int i = 0;
+		while (line[i])
+			i++;
 
-	char *copyOfLine = calloc(size, sizeof(char));
+		int size = i;
+		// printf("%d\n", size);
 
-	copyArray(line, copyOfLine);
-	i=0;
+		char *copyOfLine = calloc(size, sizeof(char));
 
-	int count = 0; //keep track of how many pipes or redirections there are
-	int input = 0; //boolean variable to check whether there is input redirections
-	int output = 0; //bool var to check if there is output redirection
-	parsePipeFilter(copyOfLine, &count, &input, &output); //get count of how mabny pipes there are
-	// printf("count: %d\n", count);
+		copyArray(line, copyOfLine);
+		i=0;
 
-	Array array; //create new object array
-	create_new_array(&array); //constructor to create and initialize array
+		int count = 0; //keep track of how many pipes or redirections there are
+		int input = 0; //boolean variable to check whether there is input redirections
+		int output = 0; //bool var to check if there is output redirection
+		parsePipeFilter(copyOfLine, &count, &input, &output); //get count of how mabny pipes there are
+		// printf("count: %d\n", count);
 
-	//initialize indicies
-  char * pnch =  strtok(line, " ");
+		Array array; //create new object array
+		create_new_array(&array); //constructor to create and initialize array
 
-  while(pnch){ //separate everything by spaces
-		//each index in array contains tokens separated bvy spaces
-      append(&array, pnch);
-      pnch = strtok(NULL, " ");
-  }
+		//initialize indicies
+	  char * pnch =  strtok(line, " ");
 
-	//multi process
-	pid_t pid; //keep track of process id of forks
-	int fd[2]; //hold fds of both ends of the pipe
+	  while(pnch){ //separate everything by spaces
+			//each index in array contains tokens separated bvy spaces
+	      append(&array, pnch);
+	      pnch = strtok(NULL, " ");
+	  }
 
-	//create pipe
-	if (pipe(fd) < 0)
-		perror("pipe error");
+		//multi process
+		pid_t pid; //keep track of process id of forks
+		int fd[2]; //hold fds of both ends of the pipe
 
-	// printf("coutn: %d\n", count);
-	int j = 0; //counter to keep track of indices in array
-	for (i = 0; i <= count; i ++){
-		pid = fork();
-		if (pid < 0){
-			perror("Problem forking");
-			exit(1);
-		}
-		else if (pid == 0){
-			//child process
-			printf("\n" );
-			printf("i am child process\n");
-			close(fd[0]); //close pipes
-			if (dup2(fd[1], STDOUT_FILENO)<0){
-				perror("cant dupe");
+		//create pipe
+		if (pipe(fd) < 0)
+			perror("pipe error");
+
+		// printf("coutn: %d\n", count);
+		int j = 0; //counter to keep track of indices in array
+		for (i = 0; i <= count; i ++){
+			pid = fork();
+			if (pid < 0){
+				perror("Problem forking");
 				exit(1);
 			}
-			execlp(array[j], array[j], NULL);
-		}
-		else{
-			printf("\n" );
-			printf("i am parent process\n");
-
-			close(fd[1]);
-			if (dup2(fd[0], STDIN_FILENO) < 0){
-				perror("cant dupe");
-				exit(1);
+			else if (pid == 0){
+				//child process
+				printf("\n" );
+				printf("i am child process\n");
+				close(fd[0]); //close pipes
+				if (dup2(fd[1], STDOUT_FILENO)<0){
+					perror("cant dupe");
+					exit(1);
+				}
+				execlp(array, array, NULL);
 			}
-			execlp("sort", "sort", NULL);
+			else{
+				printf("\n" );
+				printf("i am parent process\n");
+
+				close(fd[1]);
+				if (dup2(fd[0], STDIN_FILENO) < 0){
+					perror("cant dupe");
+					exit(1);
+				}
+				execlp("sort", "sort", NULL);
+			}
 		}
+
+		return status;
 	}
-
-	return status;
 }
