@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include "array.h"
 #include <signal.h>
+#include <fcntl.h>
+
 /******************************************************************************
 * Processes the input and determine whether it is a user interface operation
 * or a set of commands that will need to be executed.
@@ -134,7 +136,7 @@ void shell(char* filename)
 ******************************************************************************/
 short execute_commands(char* line)
 {
-	signal(SIGINT, handle_SIGINT); //start signal to watch for control + c entered by user
+	// signal(SIGINT, handle_SIGINT); //start signal to watch for control + c entered by user
 	while(1){ //keep loop running
 
 		short status;
@@ -176,44 +178,118 @@ short execute_commands(char* line)
 
 		//multi process
 		pid_t pid; //keep track of process id of forks
-		int fd[2]; //hold fds of both ends of the pipe
+		int finalfd[2]; //hold fds of both ends of the pipe
+		int tempfd[2]; //hold temporary fd to keep track of IO redirection
 
 		//create pipe
 		if (pipe(fd) < 0)
 			perror("pipe error");
 
-		// printf("coutn: %d\n", count);
+		// printf("index %d in array is %s\n", 2, get_at(&array, 2));
+
 		int j = 0; //counter to keep track of indices in array
-		for (i = 0; i <= count; i ++){
-			pid = fork();
-			if (pid < 0){
-				perror("Problem forking");
-				exit(1);
-			}
-			else if (pid == 0){
-				//child process
-				printf("\n" );
-				printf("i am child process\n");
-				close(fd[0]); //close pipes
-				if (dup2(fd[1], STDOUT_FILENO)<0){
-					perror("cant dupe");
-					exit(1);
+		printf("array size is  is %d\n", getSize(&array));
+		int commands;
+		if (count == 0){
+			commands = 1;
+		}
+		else{
+			commands = count +2;
+		}
+		i = 0;
+		while (i < getSize(&array)){
+			if ((strcmp(get_at(&array, i),"|") == 0) || (strcmp(get_at(&array, i), ">") == 0)|| (strcmp(get_at(&array, i), "<") == 0)){
+				if (strcmp(get_at(&array, i), ">") == 0){
+					//output command
+					//open outfile
+					int file;
+					//use file descriptors to redirect standard output to file rather than shared memory
+					file = open(get_at(&array, i+1), O_WRONLY|O_CREAT|O_TRUNC);
+					if (file < 0){
+						perror("cant open output file"); //error check
+					}
+					dup2(file, STDOUT_FILENO);//create dup2 to output to file
+					close(file); //close file
+
+					pid = fork(); //fork new process to execute command
+					if (pid < 0){
+						perror("Problem forking");
+						exit(1);
+					}
+					else if (pid == 0){
+						//fork successful, in child process
+						execlp(get_at(&array, i-1), get_at(&array, i-1), get_at(&array, i+1),NULL) //parameters are command, command, file, NULL
+					}
+					i = i + 2;
 				}
-				execlp(array, array, NULL);
+				else if (strcmp(get_at(&array, i), "<") == 0){
+					//output command
+					//open outfile
+					int file;
+					//use file descriptors to redirect standard output to file rather than shared memory
+					file = open(get_at(&array, i+1), O_WRONLY|O_CREAT|O_TRUNC);
+					if (file < 0){
+						perror("cant open input file"); //error check
+						exit(1);
+					}
+					dup2(file, STDIN_FILENO);//create dup2 to input from file
+					close(file); //close file
+
+					//if redirecting input is the case, then read the file after the '<' @ position i+1 and redirect it to i-1
+					pid = fork(); //fork new process to execute command
+					if (pid < 0){
+						perror("Problem forking");
+						exit(1);
+					}
+					else if (pid == 0){
+						//fork successful, in child process
+						execlp(get_at(&array, i-1), get_at(&array, i-1), get_at(&array, i+1),NULL) //parameters are command, command, file, NULL
+					}
+					i = i + 2;
+				}
+				else{
+					//char at i is "|"
+					i++; //increment by one to go to the next argument
+				}
 			}
 			else{
-				printf("\n" );
-				printf("i am parent process\n");
-
-				close(fd[1]);
-				if (dup2(fd[0], STDIN_FILENO) < 0){
-					perror("cant dupe");
+				// printf("at index %d is %s\n", i, get_at(&array, i));
+				// printf("commands: %d i: %d, element at index i is %s\n", commands, i, get_at(&array, i));
+				pid = fork();
+				if (pid < 0){
+					perror("Problem forking");
 					exit(1);
 				}
-				execlp("sort", "sort", NULL);
+				else if (pid == 0){
+					//child process
+					printf("\n" );
+					printf("i am child process\n");
+					close(fd[0]); //close reading pipe
+					if (dup2(fd[1], STDOUT_FILENO)<0){ //write to pipe
+						perror("cant dupe");
+						exit(1);
+					}
+					//how to create new subarray with the entire command?
+					if (strcmp(get_at(&array, i+1), "|") == 0)
+						execlp(get_at(&array, i), get_at(&array, i), NULL); //process current index only
+					if ((strcmp(get_at(&array, i+1), "<") == 0) || (strcmp(get_at(&array, i+1), ">") == 0)) //if next is IORedirection, continue
+						continue; //no exec call needed
+					// execlp(get_at(&array, 2), get_at(&array, 2), NULL); //test command
+					}
+					// else{ //parent process
+					// 	printf("\n" );
+					// 	printf("i am parent process\n");
+					//
+					// 	close(fd[1]);
+					// 	if (dup2(fd[0], STDIN_FILENO) < 0){
+					// 		perror("cant dupe");
+					// 		exit(1);
+					// 	}
+					// 	execlp("sort", "sort", NULL);
+					// }
+				i++;
 			}
 		}
-
 		return status;
 	}
 }
