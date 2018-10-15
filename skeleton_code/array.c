@@ -51,30 +51,22 @@ void free_array(Array * array){
 
 }
 
-char * search_for(Array * array, char * s){
+int search_for(Array * array, char * s){
 
 
    for(int i = 0; i < array->size; i++){
 
-        if(strstr(array->data[i], s) != NULL) return s;
+        if(strstr(array->data[i], s) != NULL) return i;
    }
 
-    return NULL;
+    return -1;
 }
 
 int getSize(Array *array){
   return array->size;
 }
 
-char parse(char *command, char **parsedCommand){
-  int i = 0;
-  char *token = strtok_r(command, "|<> ");//parse for command separatred by | or < or >
-  while (token){//loop to separate the entire command and store each parsed command in one index
-    parsedCommand[i] = token;
-    token = strtok_r(NULL, "|<> ");
-    i++;
-  }
-}
+
 
 /**
 int main(){

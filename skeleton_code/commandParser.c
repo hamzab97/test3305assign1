@@ -36,16 +36,6 @@ void copyArray(char *arr1, char *arr2){
   // printf("arr 2: %c\n", arr2[1]);
 }
 
-char parse(char *command, char **parsedCommand){
-  int i = 0;
-  char *token = strtok_r(command, "|<> ");//parse for command separatred by | or < or >
-  while (token){//loop to separate the entire command and store each parsed command in one index
-    parsedCommand[i] = token;
-    token = strtok_r(NULL, "|<> ");
-    i++;
-  }
-}
-
 // void current(char *commands, int *i, char *word){
 //   *word = commands[*(i)];
 // }

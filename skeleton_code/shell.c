@@ -15,6 +15,8 @@
 #include "array.h"
 #include <signal.h>
 #include <fcntl.h>
+#include<sys/wait.h>
+#include "processCommand.h"
 
 /******************************************************************************
 * Processes the input and determine whether it is a user interface operation
@@ -133,163 +135,92 @@ void shell(char* filename)
 
 /******************************************************************************
 * execute_commands will process and execute the commands in the variable line.
-******************************************************************************/
+*******************************************************************spacedArray***********/
 short execute_commands(char* line)
 {
 	// signal(SIGINT, handle_SIGINT); //start signal to watch for control + c entered by user
-	while(1){ //keep loop running
 
-		short status;
-		//enter your code here
-	//create array of pointers, each pointer points to a subarray of the parsed array
-	//each subarray will contain one commands
-	//dynamically create array of pointers and fork as many processes as there are indexes
-	//iterate and read from pipe, perform function, output to pipe
+	short status;
+	//enter your code here
+//create array of pointers, each pointer points to a subarray of the parsed array
+//each subarray will contain one commands
+//dynamically create array of pointers and fork as many processes as there are indexes
+//iterate and read from pipe, perform function, output to pipe
 
-		int i = 0;
-		while (line[i])
+	int i = 0;
+	while (line[i])
+		i++;
+	//
+	int size = i;
+	// // printf("%d\n", size);
+	//
+	char *copyOfLine = calloc(size, sizeof(char));
+	//create copy of line
+	copyArray(line, copyOfLine);
+	// i=0;
+	//
+	int count = 0; //keep track of how many pipes or redirections there are
+	int input = 0; //boolean variable to check whether there is input redirections
+	int output = 0; //bool var to check if there is output redirection
+	parsePipeFilter(copyOfLine, &count, &input, &output); //get count of how mabny pipes there are
+	// // printf("count: %d\n", count);
+
+	Array array; //create new object array
+	create_new_array(&array); //constructor to create and initialize array
+	Array spacedArray;
+	create_new_array(&spacedArray);
+
+	//initialize indicies
+  char * pnch =  strtok(line, " ");
+
+  while(pnch){ //separate everything by spaces and pipes
+		//each index in array contains tokens separated bvy spaces
+      append(&spacedArray, pnch);
+      pnch = strtok(NULL, " ");
+  }
+
+	//parse for pipe
+	pnch =  strtok(copyOfLine, "|");
+
+  while(pnch){ //separate everything by spaces
+		//each index in array contains tokens separated bvy spaces
+      append(&array, pnch);
+      pnch = strtok(NULL, "|");
+  }
+
+
+	//multi process
+	pid_t pid; //keep track of process id of forks
+	int fd[2]; //hold fds of both ends of the pipe
+
+	//create pipe
+	if (pipe(fd) < 0)
+		perror("pipe error");
+
+	// printf("index %d in array is %s\n", 2, get_at(&array, 2));
+
+	int j = 0; //counter to keep track of indices in array
+	// printf("array size is  is %d\n", getSize(&array));
+
+	i = 0;
+	while (i < getSize(&array)){
+		printf("command is %s and argument is %s\n", get_at(&spacedArray, j), get_at(&array, i));
+		// if (strcmp(get_at(&spacedArray, j), "|") != 0){
+			// process(get_at(&array, j), get_at(&array, i));
 			i++;
-
-		int size = i;
-		// printf("%d\n", size);
-
-		char *copyOfLine = calloc(size, sizeof(char));
-
-		copyArray(line, copyOfLine);
-		i=0;
-
-		int count = 0; //keep track of how many pipes or redirections there are
-		int input = 0; //boolean variable to check whether there is input redirections
-		int output = 0; //bool var to check if there is output redirection
-		parsePipeFilter(copyOfLine, &count, &input, &output); //get count of how mabny pipes there are
-		// printf("count: %d\n", count);
-
-		Array array; //create new object array
-		create_new_array(&array); //constructor to create and initialize array
-
-		//initialize indicies
-	  char * pnch =  strtok(line, " ");
-
-	  while(pnch){ //separate everything by spaces
-			//each index in array contains tokens separated bvy spaces
-	      append(&array, pnch);
-	      pnch = strtok(NULL, " ");
-	  }
-
-		//multi process
-		pid_t pid; //keep track of process id of forks
-		int finalfd[2]; //hold fds of both ends of the pipe
-		int tempfd[2]; //hold temporary fd to keep track of IO redirection
-
-		//create pipe
-		if (pipe(fd) < 0)
-			perror("pipe error");
-
-		// printf("index %d in array is %s\n", 2, get_at(&array, 2));
-
-		int j = 0; //counter to keep track of indices in array
-		printf("array size is  is %d\n", getSize(&array));
-		int commands;
-		if (count == 0){
-			commands = 1;
-		}
-		else{
-			commands = count +2;
-		}
-		i = 0;
-		while (i < getSize(&array)){
-			if ((strcmp(get_at(&array, i),"|") == 0) || (strcmp(get_at(&array, i), ">") == 0)|| (strcmp(get_at(&array, i), "<") == 0)){
-				if (strcmp(get_at(&array, i), ">") == 0){
-					//output command
-					//open outfile
-					int file;
-					//use file descriptors to redirect standard output to file rather than shared memory
-					file = open(get_at(&array, i+1), O_WRONLY|O_CREAT|O_TRUNC);
-					if (file < 0){
-						perror("cant open output file"); //error check
-					}
-					dup2(file, STDOUT_FILENO);//create dup2 to output to file
-					close(file); //close file
-
-					pid = fork(); //fork new process to execute command
-					if (pid < 0){
-						perror("Problem forking");
-						exit(1);
-					}
-					else if (pid == 0){
-						//fork successful, in child process
-						execlp(get_at(&array, i-1), get_at(&array, i-1), get_at(&array, i+1),NULL) //parameters are command, command, file, NULL
-					}
-					i = i + 2;
+			while ((j < getSize(&spacedArray)) && (strcmp(get_at(&spacedArray, j), "|") != 0))
+				{
+					printf("command at index %d is %s\n", j, get_at(&spacedArray,j));
+					j++;
 				}
-				else if (strcmp(get_at(&array, i), "<") == 0){
-					//output command
-					//open outfile
-					int file;
-					//use file descriptors to redirect standard output to file rather than shared memory
-					file = open(get_at(&array, i+1), O_WRONLY|O_CREAT|O_TRUNC);
-					if (file < 0){
-						perror("cant open input file"); //error check
-						exit(1);
-					}
-					dup2(file, STDIN_FILENO);//create dup2 to input from file
-					close(file); //close file
-
-					//if redirecting input is the case, then read the file after the '<' @ position i+1 and redirect it to i-1
-					pid = fork(); //fork new process to execute command
-					if (pid < 0){
-						perror("Problem forking");
-						exit(1);
-					}
-					else if (pid == 0){
-						//fork successful, in child process
-						execlp(get_at(&array, i-1), get_at(&array, i-1), get_at(&array, i+1),NULL) //parameters are command, command, file, NULL
-					}
-					i = i + 2;
-				}
-				else{
-					//char at i is "|"
-					i++; //increment by one to go to the next argument
-				}
-			}
-			else{
-				// printf("at index %d is %s\n", i, get_at(&array, i));
-				// printf("commands: %d i: %d, element at index i is %s\n", commands, i, get_at(&array, i));
-				pid = fork();
-				if (pid < 0){
-					perror("Problem forking");
-					exit(1);
-				}
-				else if (pid == 0){
-					//child process
-					printf("\n" );
-					printf("i am child process\n");
-					close(fd[0]); //close reading pipe
-					if (dup2(fd[1], STDOUT_FILENO)<0){ //write to pipe
-						perror("cant dupe");
-						exit(1);
-					}
-					//how to create new subarray with the entire command?
-					if (strcmp(get_at(&array, i+1), "|") == 0)
-						execlp(get_at(&array, i), get_at(&array, i), NULL); //process current index only
-					if ((strcmp(get_at(&array, i+1), "<") == 0) || (strcmp(get_at(&array, i+1), ">") == 0)) //if next is IORedirection, continue
-						continue; //no exec call needed
-					// execlp(get_at(&array, 2), get_at(&array, 2), NULL); //test command
-					}
-					// else{ //parent process
-					// 	printf("\n" );
-					// 	printf("i am parent process\n");
-					//
-					// 	close(fd[1]);
-					// 	if (dup2(fd[0], STDIN_FILENO) < 0){
-					// 		perror("cant dupe");
-					// 		exit(1);
-					// 	}
-					// 	execlp("sort", "sort", NULL);
-					// }
-				i++;
-			}
-		}
-		return status;
+			j++;
+		// }
+		// else{
+		// 	j++;
+		// }
 	}
+	printf("there are %d pipes, value of input is %d and value of output is %d\n", count, input, output);
+
+
+	return status;
 }

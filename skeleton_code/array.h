@@ -26,7 +26,7 @@ void expand_capacity(Array * array);
 
 void free_array(Array * array);
 
-char * search_for(Array * array, char * s);
+int search_for(Array * array, char * s);
 int getSize(Array *array);
 
 #endif
