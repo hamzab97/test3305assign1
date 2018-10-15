@@ -24,7 +24,7 @@ void append(Array * array, char * s){
 char* get_at(Array * array, int index){
 
     if(index >= array->size || index < 0){
-        printf("Index out of bounds");
+        printf("Index out of bounds\n");
     }
       else{
 

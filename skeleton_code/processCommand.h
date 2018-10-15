@@ -8,7 +8,7 @@
 #include <fcntl.h> // for open
 
 void process(char *command, char *argument);
-void output(char *fileoutput, char *command, char *argument);
-void input( char *fileinput, char *command, char * argument);
+void outputhandling(char *fileoutput, char *command, char *argument);
+void inputhandling( char *fileinput, char *command, char * argument);
 
 #endif

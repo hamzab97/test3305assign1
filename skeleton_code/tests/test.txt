@@ -1,0 +1,24 @@
+command is ls and argument is ls
+
+only one command passed ls
+array.c
+array.h
+array.o
+helper.c
+helper.h
+helper.o
+Makefile
+myOS
+myOS.c
+myOS.h
+myOS.o
+processCommand.c
+processCommand.h
+processCommand.o
+shell.c
+shell.h
+shell.o
+tests
+commandParser.c
+commandParser.h
+commandParser.o

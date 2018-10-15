@@ -147,6 +147,9 @@ short execute_commands(char* line)
 //dynamically create array of pointers and fork as many processes as there are indexes
 //iterate and read from pipe, perform function, output to pipe
 
+	if ((strcmp(line, "exit")) == 0)
+		exit(0);
+
 	int i = 0;
 	while (line[i])
 		i++;
@@ -213,7 +216,9 @@ short execute_commands(char* line)
 	if (count > 0){ //if there are pipes in the command
 		for (i = 0; i < getSize(&array); i++)
 		{
-			printf("i: %d sizeA: %d\n", i, getSize(&array));
+			printf("\n" );
+			printf("i: %d sizeof array : %d j: %d\n", i, getSize(&array), j);
+			printf("\n" );
 			if (i==0){ //if we're at the command command
 			//	printf("hey first command \n");
 				close(fd[0]); //close pipe
@@ -224,22 +229,24 @@ short execute_commands(char* line)
 				//printf("hey first command \n");
 				//since it sthe first command, no need to read from the pipe
 				int size = 0;
-				while (strcmp(get_at(&spacedArray, j), "|") != 0){
+				while ((j < getSize(&spacedArray)) && (strcmp(get_at(&spacedArray, j), "|") != 0)){
 					j++;
 					size++;
 				}
-				j++;
-				//printf("%d\n", size);
+				// j++;
+				printf("j: %d. size of command: %d\n", j, size);
+				printf("\n" );
 				//make exec call, output will be written to fd[1]
 				//calculate siize of command and call pass appropriate params into the process call
 				if (size > 1)
 					process(get_at(&spacedArray, j-2), get_at(&spacedArray, j-1));
 			 	else
-				 	process(get_at(&spacedArray, j-1), get_at(&spacedArray, j-1));//call process method to process the command if no pipes exist
+				 	process(get_at(&array, i), get_at(&array, i));//call process method to process the command if no pipes exist
 			}
 
 			else if (i == getSize(&array)-1){// last command
 				printf("last command \n");
+				printf("\n" );
 				//close writing fd
 				//will write to standard output
 				close(fd[1]); //close writing end
@@ -250,23 +257,23 @@ short execute_commands(char* line)
 
 				//write to standardout output
 
-
 				//calculate siize of command and call pass appropriate params into the process call
 				int size = 0;
-				while (strcmp(get_at(&spacedArray, j), "|") != 0){
+				while ((j < getSize(&spacedArray)) && (strcmp(get_at(&spacedArray, j), "|") != 0)){
 					j++;
 					size++;
 				}
-				j++;
+				// j++;
+				// printf("j: %d. size : %d\n", j, size);
 				//make exec call, output will be written to fd[1]
 				if (size > 1)
 					process(get_at(&spacedArray, j-2), get_at(&spacedArray, j-1));
 			 	else
-				 	process(get_at(&spacedArray, j-1), get_at(&spacedArray, j-1));//call process method to process the command if no pipes exist
+				 	process(get_at(&array, i), get_at(&array, i));//call process method to process the command if no pipes exist
 			}
 
 			else{
-				printf("middle commands\n");
+				// printf("middle commands\n");
 				//not the first or last commands
 				//read from fd[0]
 				//output to fd[1]
@@ -289,32 +296,44 @@ short execute_commands(char* line)
 				if (size > 1)
 					process(get_at(&spacedArray, j-2), get_at(&spacedArray, j-1));
 			 	else
-				 	process(get_at(&spacedArray, j-1), get_at(&spacedArray, j-1));//call process method to process the command if no pipes exist
+				 	process(get_at(&array, i), get_at(&array, i));//call process method to process the command if no pipes exist
 
 			}
 		}
 	}
 
 	else{ //if no pipes are in the command
+		printf("one command %s\n", get_at(&array, 0));
 		if ((input != -1) || (output != -1)){
+			printf("redirections present\n");
 			//if there are redirections in the command
 			if ((input != -1) && (output == -1)){ //if there is only input
-
+				printf("only input\n");
+				int index = search_for(&spacedArray, "<"); //find index for < in the spaced array
+				inputhandling (get_at(&spacedArray, index+1), get_at(&spacedArray, index-1),  get_at(&spacedArray, index-1));
 			}
 
 			if ((input == -1) && (output != -1)){ //if there is only output
-
+				printf("only output\n");
+				int index = search_for(&spacedArray, ">"); //find index for > in the spaced array
+				if (getSize(&spacedArray) >= 4){
+					outputhandling (get_at(&spacedArray, index+1), get_at(&spacedArray, index-2), get_at(&spacedArray, index-1));
+				}else //only one command before and after the redirect
+					outputhandling (get_at(&spacedArray, index+1), get_at(&spacedArray, index-1), get_at(&spacedArray, index-1));
 			}
+			exit(0);//exit
+		}
+		else{
+			if (getSize(&spacedArray) > 1)
+				process(get_at(&spacedArray, 0), get_at(&spacedArray, 1));
+			else
+				process(get_at(&spacedArray, 0), get_at(&spacedArray, 0));//call process method to process the command if no pipes exist
 
 		}
 		//ls -a
 		//command would be ls, argument would be -a
 		// printf("%d\n", getSize(&spacedArray));
-		if (getSize(&spacedArray) > 1)
-			process(get_at(&spacedArray, 0), get_at(&spacedArray, 1));
-		else
-			process(get_at(&spacedArray, 0), get_at(&spacedArray, 0));//call process method to process the command if no pipes exist
 	}
-	printf("%s\n", "hooiiii");
+	printf("\n");
 	return status;
 }
