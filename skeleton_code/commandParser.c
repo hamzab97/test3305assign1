@@ -16,10 +16,10 @@ void parsePipeFilter(char *arr, int *count, int *input, int *output){
       (*count) ++;
     }
     else if (arr[i] == '<'){ //check if input redirection exists
-      (*input) = 1;
+      (*input) = i; //store index of input redirect
     }
     else if (arr[i] == '>'){ //check if output redirection exists
-      (*output) = 1;
+      (*output) = i; //store the location of the output redirect
     }
     // printf("hello: %c\n", arr[i]);
     i++;

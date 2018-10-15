@@ -9,5 +9,6 @@
 
 void process(char *command, char *argument);
 void output(char *fileoutput, char *command, char *argument);
+void input( char *fileinput, char *command, char * argument);
 
 #endif
